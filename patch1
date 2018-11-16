@@ -1,3 +1,4 @@
+
 public static void dataExtract() throws ClassNotFoundException, InvalidFormatException, IOException, SQLException {
 
 		ExtentCucumberFormatter.stepTestThreadLocal.get().pass(" Fetching data from DB - Started");
