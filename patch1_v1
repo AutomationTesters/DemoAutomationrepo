@@ -1,0 +1,46 @@
+private static void writeDBResultToExcel(ResultSet resultSet, String excelName, String sheetName)
+			throws SQLException, FileNotFoundException, IOException, InvalidFormatException {
+
+		// Result Workbook
+		XSSFWorkbook resultWorkbook = null;
+		File dbResultFolder = new File("DBResults/" + TestNGCukesRunner.testResultFolderNameDownload);
+		if (!dbResultFolder.exists()) {
+			dbResultFolder.mkdir();
+		}
+		File file = new File(dbResultFolder+"/" + excelName + ".xlsx");
+		if (file.exists()) {
+			  FileUtils.cleanDirectory(new File ("DBResults/" + TestNGCukesRunner.testResultFolderNameDownload));  
+			 /* //File resultFile = new File(dbResultFolder+"/" + excelName + ".xlsx");
+			resultWorkbook = new XSSFWorkbook(new FileInputStream(file));
+			System.out.println("Inside IF");*/}
+			  resultWorkbook = new XSSFWorkbook();		/*if(resultWorkbook.getSheetAt(0).getSheetName().equalsIgnoreCase(sheetName)) {
+			
+			System.out.println(sheetName+ " Already exists");}*/
+		XSSFSheet resultSheet = resultWorkbook.createSheet(sheetName);
+		int resultRowNum = 0;
+		XSSFRow resultRow = resultSheet.createRow(resultRowNum);
+		XSSFCell resultCell = null;
+
+		ResultSetMetaData rsMetaData = resultSet.getMetaData();
+		int columnCount = rsMetaData.getColumnCount();
+
+		for (int i = 1; i <= columnCount; i++) {
+			resultCell = resultRow.createCell(i - 1);
+			// resultCell.setCellStyle(headingStyle(resultWorkbook));
+			resultCell.setCellValue(resultSet.getMetaData().getColumnLabel(i));
+			resultSheet.autoSizeColumn(resultCell.getColumnIndex());
+		}
+
+		while (resultSet.next()) {
+			resultRow = resultSheet.createRow(++resultRowNum);
+			for (int i = 1; i <= columnCount; i++) {
+				String columnName = rsMetaData.getColumnLabel(i);
+				Cell cell = resultRow.createCell(getColumnIndex(resultSheet, columnName));
+				cell.setCellValue(resultSet.getString(columnName));
+				resultSheet.autoSizeColumn(cell.getColumnIndex());
+			}
+		}
+
+		resultWorkbook.write(new FileOutputStream(file));
+		// resultWorkbook.close();
+	}
