@@ -1,5 +1,48 @@
 
-public static void dataExtract() throws ClassNotFoundException, InvalidFormatException, IOException, SQLException {
+package com.cucumber.commonFunctions;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Iterator;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.cucumber.Application.ApplicationsVariables;
+import com.cucumber.listener.ExtentCucumberFormatter;
+import com.cucumber.runner.TestNGCukesRunner;
+
+public class DBDataExtract {
+
+	// Input Workbook
+	public static XSSFWorkbook testDataQuery = null;
+	public static XSSFSheet testDataQueryConfigSheet = null;
+	public static XSSFSheet testDataQueryQuerySheet = null;
+	public static XSSFSheet testDataQueryConnDetailsSheet = null;
+	public static XSSFRow testDataQueryRow = null;
+	public static String excelName = null;
+
+	public static void main(String[] arg)
+			throws ClassNotFoundException, InvalidFormatException, IOException, SQLException {
+		Class.forName("oracle.jdbc.OracleDriver");
+		// dataExtract();
+	}
+
+	public static void dataExtract() throws ClassNotFoundException, InvalidFormatException, IOException, SQLException {
 
 		ExtentCucumberFormatter.stepTestThreadLocal.get().pass(" Fetching data from DB - Started");
 		// prefixed index value variables with i.
@@ -79,7 +122,8 @@ public static void dataExtract() throws ClassNotFoundException, InvalidFormatExc
 		}
 
 	}
-private static void writeDBResultToExcel(ResultSet resultSet, String excelName, String sheetName)
+
+	private static void writeDBResultToExcel(ResultSet resultSet, String excelName, String sheetName)
 			throws SQLException, FileNotFoundException, IOException, InvalidFormatException {
 
 		// Result Workbook
@@ -124,4 +168,114 @@ private static void writeDBResultToExcel(ResultSet resultSet, String excelName, 
 
 		resultWorkbook.write(new FileOutputStream(file));
 		// resultWorkbook.close();
-	}	
+	}
+
+	private static void writeDBResultToExcelLBXCust(ResultSet resultSet)
+			throws SQLException, FileNotFoundException, IOException, InvalidFormatException {
+
+		// Result Workbook
+		XSSFWorkbook resultWorkbook = null;
+		// File dbResultFolder= new File("DBResults/NewCustomer/NewCustomers.xlsx");
+		File dbResultFolder = new File("TestData/TestData.xlsx");
+
+		// dbResultFolder.mkdir();
+		// File file = new File(dbResultFolder+"/"+ "NewCustomers.xlsx");
+		// if (file.exists()) {
+		resultWorkbook = new XSSFWorkbook(new FileInputStream(dbResultFolder));
+		// } else {
+		// resultWorkbook = new XSSFWorkbook();
+		// }
+
+		XSSFSheet resultSheet = resultWorkbook.getSheet("NewCustomers");
+		int resultRowNum = 0;
+		XSSFRow resultRow = resultSheet.createRow(resultRowNum);
+		XSSFCell resultCell = null;
+
+		ResultSetMetaData rsMetaData = resultSet.getMetaData();
+		int columnCount = rsMetaData.getColumnCount();
+
+		for (int i = 1; i <= columnCount; i++) {
+			resultCell = resultRow.createCell(i - 1);
+			// resultCell.setCellStyle(headingStyle(resultWorkbook));
+			resultCell.setCellValue(resultSet.getMetaData().getColumnLabel(i));
+			resultSheet.autoSizeColumn(resultCell.getColumnIndex());
+		}
+
+		while (resultSet.next()) {
+			resultRow = resultSheet.createRow(++resultRowNum);
+			for (int i = 1; i <= columnCount; i++) {
+				String columnName = rsMetaData.getColumnLabel(i);
+				Cell cell = resultRow.createCell(getColumnIndex(resultSheet, columnName));
+				cell.setCellValue(resultSet.getString(columnName));
+				resultSheet.autoSizeColumn(cell.getColumnIndex());
+			}
+		}
+		FileOutputStream fileout = new FileOutputStream(dbResultFolder);
+		resultWorkbook.write(fileout);
+		fileout.close();
+	}
+
+	private static void writeUISearchtToExcel(ResultSet resultSet, String excelName, String sheetName, int rowCount,
+			int colCount) throws SQLException, FileNotFoundException, IOException, InvalidFormatException {
+
+		// Result Workbook
+		XSSFWorkbook resultWorkbook = null;
+		File dbResultFolder = new File("DBResults/" + TestNGCukesRunner.testResultFolderNameDownload);
+		dbResultFolder.mkdir();
+		File file = new File(dbResultFolder + "/" + excelName + ".xlsx");
+		if (file.exists()) {
+			resultWorkbook = new XSSFWorkbook(new FileInputStream(
+					"DBResults/" + TestNGCukesRunner.testResultFolderNameDownload + "/" + excelName + ".xlsx"));
+		} else {
+			resultWorkbook = new XSSFWorkbook();
+		}
+
+		XSSFSheet resultSheet = resultWorkbook.createSheet(sheetName);
+		int resultRowNum = 0;
+		XSSFRow resultRow = resultSheet.createRow(resultRowNum);
+		XSSFCell resultCell = null;
+
+		ResultSetMetaData rsMetaData = resultSet.getMetaData();
+		int columnCount = rsMetaData.getColumnCount();
+
+		for (int i = 1; i <= columnCount; i++) {
+			resultCell = resultRow.createCell(i - 1);
+			// resultCell.setCellStyle(headingStyle(resultWorkbook));
+			resultCell.setCellValue(resultSet.getMetaData().getColumnLabel(i));
+			resultSheet.autoSizeColumn(resultCell.getColumnIndex());
+		}
+
+		while (resultSet.next()) {
+			resultRow = resultSheet.createRow(++resultRowNum);
+			for (int i = 1; i <= columnCount; i++) {
+				String columnName = rsMetaData.getColumnLabel(i);
+				Cell cell = resultRow.createCell(getColumnIndex(resultSheet, columnName));
+				cell.setCellValue(resultSet.getString(columnName));
+				resultSheet.autoSizeColumn(cell.getColumnIndex());
+			}
+		}
+
+		FileOutputStream fileout = new FileOutputStream(dbResultFolder);
+		resultWorkbook.write(fileout);
+		fileout.close();
+		// resultWorkbook.write(new FileOutputStream(file));
+		// resultWorkbook.close();
+	}
+
+	public static int getColumnIndex(XSSFSheet sheet, String columnName) {
+		int index = -1;
+		Iterator<Cell> cellIterator = sheet.getRow(0).cellIterator();
+		while (cellIterator.hasNext()) {
+			Cell cell = (Cell) cellIterator.next();
+			if (cell.getStringCellValue().contentEquals(columnName)) {
+				// System.out.println(columnName+" : found");
+				index = cell.getColumnIndex();
+				break;
+			}
+		}
+		if (index == -1) {
+			System.out.println("ColumnName '" + columnName + "' Not found in sheet '" + sheet.getSheetName() + "'");
+		}
+		return index;
+	}
+}
